@@ -54,10 +54,13 @@ app.post('/submit-feedback', async (req, res) => {
     }
 });
 
+// Use a simple hardcoded secret key (for development only)
+const SECRET_KEY = 'mySuperSecretKey12345!'; // Replace this with your generated key
+
 // Route to generate a temporary URL
 app.get('/generate-temp-url', (req, res) => {
     const tempUrl = `https://foodfeedback.onrender.com/update-feedback`;
-    const token = jwt.sign({ tempUrl }, process.env.SECRET_KEY, { expiresIn: '5m' }); // Use secret key from environment variable
+    const token = jwt.sign({ tempUrl }, SECRET_KEY, { expiresIn: '5m' }); // Use the hardcoded secret key
     res.json({ tempUrl: `${tempUrl}?token=${token}` });
 });
 
