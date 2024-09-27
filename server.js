@@ -59,14 +59,15 @@ app.post('/submit-feedback', async (req, res) => {
 // Route to generate a temporary URL
 const SECRET_KEY = process.env.SECRET_KEY; // Get the secret key from environment variables
 app.get('/generate-temp-url', (req, res) => {
-    const tempUrl = `https://foodfeedback.onrender.com/update-feedback`;
-    const token = jwt.sign({ tempUrl }, SECRET_KEY, { expiresIn: '5m' }); // Use the secret key
-    res.json({ tempUrl: `${tempUrl}?token=${token}` });
+    const email = req.query.email; // Assuming you are passing the email when generating the temp URL
+    const tempUrl = `https://foodfeedback.onrender.com/update-feedback?email=${email}`;
+    const token = jwt.sign({ email }, SECRET_KEY, { expiresIn: '5m' }); // Include email in the token payload
+    res.json({ tempUrl: `${tempUrl}&token=${token}` });
 });
 
 // Route to generate the QR code
 app.get('/generate-permanent-qr', async (req, res) => {
-    const permanentURL = `https://foodfeedback.onrender.com/generate-temp-url`;
+    const permanentURL = `https://foodfeedback.onrender.com/generate-temp-url?email=example@example.com`; // Replace with actual email
     try {
         const qrCodeURL = await QRCode.toDataURL(permanentURL);
         res.json({ qrCodeURL });
@@ -85,8 +86,8 @@ app.get('/update-feedback', async (req, res) => {
             return res.status(401).json({ message: 'Invalid or expired token' });
         }
 
-        // If token is valid, find the feedback by email or return an error
-        const email = decoded.tempUrl.split('email=')[1]; // Assuming you encode email in the token
+        // If token is valid, find the feedback by email
+        const email = decoded.email; // Get email from token payload
         const feedback = await Feedback.findOne({ email });
 
         if (!feedback) {
@@ -131,40 +132,56 @@ app.get('/update-feedback', async (req, res) => {
 <body>
 
     <div class="container mt-5">
-        <h2 class="text-center">Generate Feedback QR Code</h2>
-        <button id="generateQR" class="btn btn-primary">Generate QR Code</button>
-        <div id="qrCodeContainer" class="text-center mt-4"></div>
-
-        <!-- Loading Message -->
-        <div id="loadingMessage" class="text-info">Please wait, loading...</div>
-
-        <!-- Modal for Thank You Popup -->
-        <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="thankYouModalLabel">Thank You!</h5>
-                    </div>
-                    <div class="modal-body" id="modalBody">
-                        <!-- Thank you message will go here -->
-                    </div>
-                </div>
+        <h2 class="text-center">Update Feedback</h2>
+        <form id="feedbackForm">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" value="${feedback.name}" required>
             </div>
-        </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" value="${feedback.email}" required readonly>
+            </div>
+            <div class="mb-3">
+                <label for="rating" class="form-label">Rating</label>
+                <input type="text" class="form-control" id="rating" value="${feedback.rating}" required>
+            </div>
+            <div class="mb-3">
+                <label for="comments" class="form-label">Comments</label>
+                <textarea class="form-control" id="comments" required>${feedback.comments}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Feedback</button>
+        </form>
     </div>
 
     <script>
-        document.getElementById('generateQR').addEventListener('click', async () => {
-            const response = await fetch('/generate-permanent-qr');
-            const data = await response.json();
-            document.getElementById('qrCodeContainer').innerHTML = `<img src="${data.qrCodeURL}" alt="QR Code">`;
+        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const rating = document.getElementById('rating').value;
+            const comments = document.getElementById('comments').value;
+
+            const response = await fetch('/submit-feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email, rating, comments }),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert('Feedback updated successfully!');
+            } else {
+                alert('Error updating feedback: ' + result.error);
+            }
         });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
         `);
     });
 });
