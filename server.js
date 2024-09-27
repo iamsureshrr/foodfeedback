@@ -2,11 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
+require('dotenv').config(); // Load environment variables
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -26,14 +28,9 @@ const feedbackSchema = new mongoose.Schema({
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
 // Serve static files from the 'public' folder
-//app.use(express.static(path.join(__dirname, 'public' )));
-
-
-// Serve the HTML file from root (without 'public' folder)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));  // This assumes your 'feedback.html' is in the root directory
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
-
 
 // API to handle form submission
 app.post('/submit-feedback', async (req, res) => {
@@ -54,6 +51,24 @@ app.post('/submit-feedback', async (req, res) => {
         res.json({ success: true, name });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error saving feedback' });
+    }
+});
+
+// Route to generate a temporary URL
+app.get('/generate-temp-url', (req, res) => {
+    const tempUrl = `https://foodfeedback.onrender.com/update-feedback`;
+    const token = jwt.sign({ tempUrl }, process.env.SECRET_KEY, { expiresIn: '5m' }); // Use secret key from environment variable
+    res.json({ tempUrl: `${tempUrl}?token=${token}` });
+});
+
+// Route to generate the QR code
+app.get('/generate-permanent-qr', async (req, res) => {
+    const permanentURL = `https://foodfeedback.onrender.com/generate-temp-url`;
+    try {
+        const qrCodeURL = await QRCode.toDataURL(permanentURL);
+        res.json({ qrCodeURL });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate QR code.' });
     }
 });
 
