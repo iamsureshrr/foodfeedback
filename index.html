@@ -58,9 +58,21 @@
 
     <script>
         document.getElementById('generateQR').addEventListener('click', async () => {
-            const response = await fetch('/generate-permanent-qr');
-            const data = await response.json();
-            document.getElementById('qrCodeContainer').innerHTML = `<img src="${data.qrCodeURL}" alt="QR Code">`;
+            try {
+                const response = await fetch('/generate-permanent-qr');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                if (data.qrCodeURL) {
+                    document.getElementById('qrCodeContainer').innerHTML = `<img src="${data.qrCodeURL}" alt="QR Code">`;
+                } else {
+                    throw new Error('QR Code URL not found');
+                }
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                alert('Failed to generate QR code: ' + error.message);
+            }
         });
     </script>
 

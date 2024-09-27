@@ -13,7 +13,7 @@ app.use(cors());
 app.use(helmet()); // Use helmet for security
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => console.log('Connected to MongoDB'))
@@ -68,10 +68,13 @@ app.get('/generate-temp-url', (req, res) => {
 // Route to generate the QR code
 app.get('/generate-permanent-qr', async (req, res) => {
     const permanentURL = `https://foodfeedback.onrender.com/generate-temp-url?email=example@example.com`; // Replace with actual email
+    console.log('Generating QR Code for URL:', permanentURL); // Debug log
     try {
         const qrCodeURL = await QRCode.toDataURL(permanentURL);
+        console.log('QR Code generated successfully'); // Debug log
         res.json({ qrCodeURL });
     } catch (error) {
+        console.error('Error generating QR code:', error); // Debug log
         res.status(500).json({ error: 'Failed to generate QR code.' });
     }
 });
@@ -155,8 +158,8 @@ app.get('/update-feedback', async (req, res) => {
     </div>
 
     <script>
-        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.getElementById('feedbackForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const rating = document.getElementById('rating').value;
@@ -164,17 +167,18 @@ app.get('/update-feedback', async (req, res) => {
 
             const response = await fetch('/submit-feedback', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, rating, comments }),
             });
 
-            const result = await response.json();
-            if (result.success) {
-                alert('Feedback updated successfully!');
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('modalBody').innerText = \`Thank you, \${data.name}, for your feedback!\`;
+                $('#thankYouModal').modal('show'); // Show modal using Bootstrap
+            } else if (data.error === 'already_submitted') {
+                alert('Feedback already submitted for this email.');
             } else {
-                alert('Error updating feedback: ' + result.error);
+                alert('Error submitting feedback.');
             }
         });
     </script>
@@ -187,7 +191,7 @@ app.get('/update-feedback', async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
