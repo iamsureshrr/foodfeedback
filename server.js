@@ -40,7 +40,13 @@ app.post('/submit-feedback', async (req, res) => {
     try {
         const { name, email, rating, comments } = req.body;
 
-        // Save feedback in MongoDB
+        // Check if feedback has already been submitted with this email
+        const existingFeedback = await Feedback.findOne({ email });
+        if (existingFeedback) {
+            return res.json({ success: false, error: 'already_submitted' });
+        }
+
+        // Save new feedback in MongoDB
         const feedback = new Feedback({ name, email, rating, comments });
         await feedback.save();
 
