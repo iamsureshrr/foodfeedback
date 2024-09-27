@@ -24,6 +24,14 @@
             text-align: center;
             font-size: 1.5rem;
         }
+        
+        /* Loading message style */
+        #loadingMessage {
+            display: none;
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -66,6 +74,9 @@
             <button type="submit" class="btn btn-primary">Submit Feedback</button>
         </form>
 
+        <!-- Loading Message -->
+        <div id="loadingMessage" class="text-info">Please wait, loading...</div>
+
         <!-- Modal for Thank You Popup -->
         <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -85,6 +96,9 @@
         document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            // Show loading message
+            document.getElementById('loadingMessage').style.display = 'block';
+
             const feedback = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
@@ -100,6 +114,9 @@
             });
 
             const result = await response.json();
+
+            // Hide loading message
+            document.getElementById('loadingMessage').style.display = 'none';
 
             if (result.success) {
                 // Show thank you modal
