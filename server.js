@@ -37,6 +37,9 @@ app.get('/qr', (req, res) => {
     res.sendFile(path.join(__dirname, 'qr.html'));
 });
 
+// Serve static files from the "images" directory
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // API to handle form submission
 app.post('/submit-feedback', async (req, res) => {
     try {
