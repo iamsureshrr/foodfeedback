@@ -24,18 +24,12 @@ const feedbackSchema = new mongoose.Schema({
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
-// Serve static files (HTML, CSS, JS, Images) from the root directory
-app.use(express.static(path.join(__dirname)));
-
-// Serve static files from the "images" directory
-app.use('/images', express.static(path.join(__dirname, 'images')));
-
-// Serve the feedback form (index.html)
+// Serve the HTML file from root
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Serve the QR code generator page (qr.html)
+// Serve the QR code generator page
 app.get('/qr', (req, res) => {
     res.sendFile(path.join(__dirname, 'qr.html'));
 });
@@ -62,18 +56,33 @@ app.post('/submit-feedback', async (req, res) => {
     }
 });
 
-// Temporary link endpoint (generates a 5-minute temporary link)
-const tempLinks = {};
+// Temporary link endpoint
+let tempLinks = {}; // Store temporary links with their expiry timestamps
+
 app.get('/temp-link', (req, res) => {
-    const tempId = Date.now(); // Unique identifier for the temp link
-    const expiryTime = Date.now() + 5 * 60 * 1000; // 5-minute expiry
-    const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link URL
+    const tempId = Date.now(); // Unique identifier
+    const expiryTime = Date.now() + 5 * 60 * 1000; // Expires in 5 minutes
+    const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link
 
-    // Store the expiry time for this temp link
-    tempLinks[tempId] = expiryTime;
+    tempLinks[tempId] = expiryTime; // Store the expiry time
+    res.json({ link: temporaryLink }); // Return the temporary link
+});
 
-    // Redirect to the temporary link
-    res.redirect(temporaryLink);
+// Handle access to the feedback form with expiration logic
+app.get('/', (req, res) => {
+    const { temp } = req.query;
+
+    if (temp && tempLinks[temp]) {
+        // Check if the link has expired
+        if (Date.now() > tempLinks[temp]) {
+            delete tempLinks[temp]; // Remove expired link
+            return res.status(403).send('This link has expired. Please scan the QR code again.'); // Link expired
+        }
+        // Link is valid, serve the feedback form
+        return res.sendFile(path.join(__dirname, 'index.html'));
+    }
+    // If no valid temp link, redirect to the QR code page
+    res.redirect('/qr');
 });
 
 // Start the server
