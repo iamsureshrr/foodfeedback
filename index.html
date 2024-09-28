@@ -62,8 +62,8 @@
 .time-remaining {
     position: absolute;
     left: 10px;
-    color: #000000;
-    -webkit-text-stroke: 0.7px white;
+    color: #FFFFFF;
+    -webkit-text-stroke: 0.7px black;
             text-stroke: 0.0px black;
 }
 
@@ -194,7 +194,7 @@ const updateStatusBar = () => {
     if (remainingTime > 0) {
         requestAnimationFrame(updateStatusBar);
     }else {
-        window.location.href = "https://foodfeedback.onrender.com/temp-link";
+        window.location.href = "https://foodfeedback.onrender.com/qr";
     }
 };
 
