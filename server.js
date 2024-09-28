@@ -24,39 +24,14 @@ const feedbackSchema = new mongoose.Schema({
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
-// Store temporary link expiry times in memory (for demo purposes)
-const temporaryLinks = {};
-
-// Serve static files from the root directory
+// Serve the HTML file from root
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Temporary link endpoint
-app.get('/temp-link', (req, res) => {
-    const tempId = Date.now() + 5 * 60 * 1000; // Expires in 5 minutes
-    const temporaryLink = `https://foodfeedback.onrender.com?temp=${tempId}`;
-
-    // Store the temporary link expiry time
-    temporaryLinks[tempId] = Date.now() + 5 * 60 * 1000; // Set expiry time
-
-    res.redirect(temporaryLink);
-});
-
-// Feedback form route
-app.get('/feedback', (req, res) => {
-    const tempParam = req.query.temp;
-    if (tempParam && temporaryLinks[tempParam]) {
-        // Check if the link has expired
-        const expiryTime = temporaryLinks[tempParam];
-        if (Date.now() > expiryTime) {
-            return res.status(403).send('Link has expired. Please scan the QR code again.');
-        }
-        // Serve the feedback form if not expired
-        res.sendFile(path.join(__dirname, 'index.html'));
-    } else {
-        return res.status(403).send('Invalid link. Please scan the QR code again.');
-    }
+// Serve the QR code generator page
+app.get('/qr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'qr.html'));
 });
 
 // API to handle form submission
@@ -79,6 +54,13 @@ app.post('/submit-feedback', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error saving feedback' });
     }
+});
+
+// Temporary link endpoint
+app.get('/temp-link', (req, res) => {
+    // Generate a temporary link valid for 5 minutes
+    const temporaryLink = `https://foodfeedback.onrender.com?temp=${Date.now() + 5 * 60 * 1000}`; // Expires in 5 minutes
+    res.json({ link: temporaryLink });
 });
 
 // Start the server
