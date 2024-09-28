@@ -138,24 +138,22 @@ color: floralwhite;
 
 
 
-      <!-- Modal for Thank You Popup -->
-<div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="thankYouModalLabel">Feedback Status</h5>
-            </div>
-            <div class="modal-body">
-                <!-- Loading Message (hidden by default) -->
-                <p id="loadingMessage" class="text-info" style="display:none;">Please wait, loading...</p>
-
-                <!-- Thank you message (hidden by default) -->
-                <p id="thankYouMessage" style="display:none;">Thank you!</p>
+        <!-- Modal for Thank You Popup -->
+        <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+        <!-- Loading Message -->
+        <div id="loadingMessage" class="text-info">Please wait, loading...</div>				
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="thankYouModalLabel">Thank You!</h5>
+                    </div>
+                    <div class="modal-body" id="modalBody">
+                        <!-- Thank you message will go here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
 
     <script>
         document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
@@ -193,6 +191,12 @@ color: floralwhite;
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(feedback),
             });
+
+            const result = await response.json();
+
+
+
+
 
             const result = await response.json();
 
