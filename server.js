@@ -60,8 +60,9 @@ app.post('/submit-feedback', async (req, res) => {
 app.get('/temp-link', (req, res) => {
     // Generate a temporary link valid for 5 minutes
     const temporaryLink = `https://foodfeedback.onrender.com?temp=${Date.now() + 5 * 60 * 1000}`; // Expires in 5 minutes
-    res.json(temporaryLink);
+    res.redirect(temporaryLink); // Redirect to the temporary link
 });
+
 
 // Start the server
 const PORT = process.env.PORT || 5000;
