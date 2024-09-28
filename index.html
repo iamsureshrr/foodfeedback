@@ -158,90 +158,88 @@ color: floralwhite;
 
 
     <script>
-    const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const path = require('path');
+        document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+            
+ const feedback = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                rating: document.getElementById('rating').value,
+                comments: document.getElementById('comments').value,
+            };
 
-// Connect to MongoDB
-mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.log('MongoDB Connection Error:', err));
+            // Convert the image to Base64 if one is uploaded
+            const imageInput = document.getElementById('image');
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    feedback.image = reader.result; // Base64 string
+                    sendFeedback(feedback); // Send feedback after converting the image
+                };
+                reader.readAsDataURL(file);
+            } else {
+                sendFeedback(feedback); // Send feedback without an image
+            }
+        });
 
-// Feedback Schema
-const feedbackSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    rating: String,
-    comments: String,
-});
+        async function sendFeedback(feedback) {
+            // Show loading message
+            document.getElementById('loadingMessage').style.display = 'block';
 
-const Feedback = mongoose.model('Feedback', feedbackSchema);
+            const response = await fetch('/submit-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(feedback),
+            });
 
-// Serve static files (HTML, CSS, JS, Images) from the root directory
-app.use(express.static(path.join(__dirname)));
+            const result = await response.json();
 
-// Serve static files from the "images" directory
-app.use('/images', express.static(path.join(__dirname, 'images')));
+            // Hide loading message
+            document.getElementById('loadingMessage').style.display = 'none';
 
-// Serve the feedback form (index.html)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+            if (result.success) {
+                // Show thank you modal
+                const modalBody = document.getElementById('modalBody');
+                modalBody.textContent = `Thank you, ${result.name}!`;
 
-// Serve the QR code generator page (qr.html)
-app.get('/qr', (req, res) => {
-    res.sendFile(path.join(__dirname, 'qr.html'));
-});
+                const thankYouModal = new bootstrap.Modal(document.getElementById('thankYouModal'));
+                thankYouModal.show();
 
-// API to handle form submission
-app.post('/submit-feedback', async (req, res) => {
-    try {
-        const { name, email, rating, comments } = req.body;
+                // Automatically dismiss the modal after 2 seconds
+                setTimeout(() => {
+                    thankYouModal.hide();
+                    // Clear all fields after the modal is dismissed
+                    document.getElementById('feedbackForm').reset();
+                }, 2000);
+            } else if (result.error === 'already_submitted') {
+                alert('You have already submitted feedback.');
+            }
+        });
+		//Status bar color
+const duration = 5 * 60 * 1000; // 5 minutes in milliseconds
+const startTime = Date.now();
 
-        // Check if feedback has already been submitted with this email
-        const existingFeedback = await Feedback.findOne({ email });
-        if (existingFeedback) {
-            return res.json({ success: false, error: 'already_submitted' });
-        }
+const updateStatusBar = () => {
+    const elapsedTime = Date.now() - startTime;
+    const remainingTime = duration - elapsedTime;
+    const widthPercentage = (remainingTime / duration) * 100;
+    document.getElementById("statusBar").style.width = widthPercentage + '%';
 
-        // Save new feedback in MongoDB
-        const feedback = new Feedback({ name, email, rating, comments });
-        await feedback.save();
+    const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+    document.getElementById("timeRemaining").innerText = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-        // Respond with success and user's name
-        res.json({ success: true, name });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'Error saving feedback' });
+    if (remainingTime > 0) {
+        requestAnimationFrame(updateStatusBar);
+    }else {
+        window.location.href = "https://foodfeedback.onrender.com/qr";
     }
-});
+};
 
-// Temporary link endpoint (generates a 5-minute temporary link)
-const tempLinks = {};
-app.get('/temp-link', (req, res) => {
-    const tempId = Date.now(); // Unique identifier for the temp link
-    const expiryTime = Date.now() + 5 * 60 * 1000; // 5-minute expiry
-    const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link URL
-
-    // Store the expiry time for this temp link
-    tempLinks[tempId] = expiryTime;
-
-    // Redirect to the temporary link
-    res.redirect(temporaryLink);
-});
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
+requestAnimationFrame(updateStatusBar);
 		
     </script>
 
