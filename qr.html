@@ -35,3 +35,16 @@
     </script>
 </body>
 </html>
+
+ are using a deployed URL
+
+        const qrcode = new QRCode(document.getElementById("qrcode"), {
+            text: url,
+            width: 128,
+            height: 128,
+            colorDark: "FFCFB3",
+            colorLight: "FFF5CD",
+            correctLevel: QRCode.CorrectLevel.H,
+        });
+    });
+</script>
