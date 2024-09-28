@@ -126,6 +126,11 @@ color: floralwhite;
                 <label for="comments" class="form-label">Comments</label>
                 <textarea class="form-control" id="comments" rows="4" placeholder="Your feedback..." required></textarea>
             </div>
+			<!-- Image Upload (Optional) -->
+			<div class="mb-3">
+				<label for="image" class="form-label">Upload Image (Optional)</label>
+				<input type="file" class="form-control" id="image" accept="image/*">
+			</div>
 
             <!-- Submit Button -->
             <button type="submit" class="btn btn-primary">Submit Feedback</button>
@@ -133,90 +138,110 @@ color: floralwhite;
 
 
 
-        <!-- Modal for Thank You Popup -->
-        <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-        <!-- Loading Message -->
-        <div id="loadingMessage" class="text-info">Please wait, loading...</div>				
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="thankYouModalLabel">Thank You!</h5>
-                    </div>
-                    <div class="modal-body" id="modalBody">
-                        <!-- Thank you message will go here -->
-                    </div>
-                </div>
+      <!-- Modal for Thank You Popup -->
+<div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="thankYouModalLabel">Feedback Status</h5>
+            </div>
+            <div class="modal-body">
+                <!-- Loading Message (hidden by default) -->
+                <p id="loadingMessage" class="text-info" style="display:none;">Please wait, loading...</p>
+
+                <!-- Thank you message (hidden by default) -->
+                <p id="thankYouMessage" style="display:none;">Thank you!</p>
             </div>
         </div>
     </div>
+</div>
+
 
     <script>
-        document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+    const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
 
-            // Show loading message
-            document.getElementById('loadingMessage').style.display = 'block';
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-            const feedback = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                rating: document.getElementById('rating').value,
-                comments: document.getElementById('comments').value,
-            };
+// Connect to MongoDB
+mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.log('MongoDB Connection Error:', err));
 
-            // Send feedback to the backend
-            const response = await fetch('/submit-feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(feedback),
-            });
+// Feedback Schema
+const feedbackSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    rating: String,
+    comments: String,
+});
 
-            const result = await response.json();
+const Feedback = mongoose.model('Feedback', feedbackSchema);
 
-            // Hide loading message
-            document.getElementById('loadingMessage').style.display = 'none';
+// Serve static files (HTML, CSS, JS, Images) from the root directory
+app.use(express.static(path.join(__dirname)));
 
-            if (result.success) {
-                // Show thank you modal
-                const modalBody = document.getElementById('modalBody');
-                modalBody.textContent = `Thank you, ${result.name}!`;
+// Serve static files from the "images" directory
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
-                const thankYouModal = new bootstrap.Modal(document.getElementById('thankYouModal'));
-                thankYouModal.show();
+// Serve the feedback form (index.html)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
-                // Automatically dismiss the modal after 2 seconds
-                setTimeout(() => {
-                    thankYouModal.hide();
-                    // Clear all fields after the modal is dismissed
-                    document.getElementById('feedbackForm').reset();
-                }, 2000);
-            } else if (result.error === 'already_submitted') {
-                alert('You have already submitted feedback.');
-            }
-        });
-		//Status bar color
-const duration = 5 * 60 * 1000; // 5 minutes in milliseconds
-const startTime = Date.now();
+// Serve the QR code generator page (qr.html)
+app.get('/qr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'qr.html'));
+});
 
-const updateStatusBar = () => {
-    const elapsedTime = Date.now() - startTime;
-    const remainingTime = duration - elapsedTime;
-    const widthPercentage = (remainingTime / duration) * 100;
-    document.getElementById("statusBar").style.width = widthPercentage + '%';
+// API to handle form submission
+app.post('/submit-feedback', async (req, res) => {
+    try {
+        const { name, email, rating, comments } = req.body;
 
-    const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-    document.getElementById("timeRemaining").innerText = 
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        // Check if feedback has already been submitted with this email
+        const existingFeedback = await Feedback.findOne({ email });
+        if (existingFeedback) {
+            return res.json({ success: false, error: 'already_submitted' });
+        }
 
-    if (remainingTime > 0) {
-        requestAnimationFrame(updateStatusBar);
-    }else {
-        window.location.href = "https://foodfeedback.onrender.com/qr";
+        // Save new feedback in MongoDB
+        const feedback = new Feedback({ name, email, rating, comments });
+        await feedback.save();
+
+        // Respond with success and user's name
+        res.json({ success: true, name });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Error saving feedback' });
     }
-};
+});
 
-requestAnimationFrame(updateStatusBar);
+// Temporary link endpoint (generates a 5-minute temporary link)
+const tempLinks = {};
+app.get('/temp-link', (req, res) => {
+    const tempId = Date.now(); // Unique identifier for the temp link
+    const expiryTime = Date.now() + 5 * 60 * 1000; // 5-minute expiry
+    const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link URL
+
+    // Store the expiry time for this temp link
+    tempLinks[tempId] = expiryTime;
+
+    // Redirect to the temporary link
+    res.redirect(temporaryLink);
+});
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+
 		
     </script>
 

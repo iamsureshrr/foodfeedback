@@ -20,6 +20,7 @@ const feedbackSchema = new mongoose.Schema({
     email: String,
     rating: String,
     comments: String,
+	image: String, // Store image as a Base64 string
 });
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
