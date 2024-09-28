@@ -2,10 +2,15 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Set up multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory
+const upload = multer({ storage: storage });
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -44,12 +49,18 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // API to handle form submission
 app.post('/submit-feedback', async (req, res) => {
     try {
-        const { name, email, rating, comments, image } = req.body; // Include image
+        const { name, email, rating, comments} = req.body;
 
         // Check if feedback has already been submitted with this email
         const existingFeedback = await Feedback.findOne({ email });
         if (existingFeedback) {
             return res.json({ success: false, error: 'already_submitted' });
+        }
+		
+		 // Prepare image for storage
+        let image;
+        if (req.file) {
+            image = req.file.buffer.toString('base64'); // Convert image to Base64 string
         }
 
         // Save new feedback in MongoDB
