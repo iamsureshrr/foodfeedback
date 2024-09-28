@@ -2,11 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-
+const multer = require('multer');
+const fs = require('fs');
 const app = express();
+
+// Middleware
 app.use(express.json());
 app.use(cors());
-
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -21,22 +23,26 @@ const feedbackSchema = new mongoose.Schema({
     email: String,
     rating: String,
     comments: String,
+    imagePath: String,  // Path to the uploaded image
 });
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
-// Serve static files from the 'public' folder
-//app.use(express.static(path.join(__dirname, 'public' )));
-
-
-// Serve the HTML file from root (without 'public' folder)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));  // This assumes your 'feedback.html' is in the root directory
+// Image upload handling
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    },
 });
 
+const upload = multer({ storage });
 
-// API to handle form submission
-app.post('/submit-feedback', async (req, res) => {
+// API to handle form submission (with image upload)
+app.post('/submit-feedback', upload.single('image'), async (req, res) => {
     try {
         const { name, email, rating, comments } = req.body;
 
@@ -47,7 +53,14 @@ app.post('/submit-feedback', async (req, res) => {
         }
 
         // Save new feedback in MongoDB
-        const feedback = new Feedback({ name, email, rating, comments });
+        const feedback = new Feedback({
+            name,
+            email,
+            rating,
+            comments,
+            imagePath: req.file ? req.file.path : null,
+        });
+
         await feedback.save();
 
         // Respond with success and user's name
@@ -55,6 +68,14 @@ app.post('/submit-feedback', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error saving feedback' });
     }
+});
+
+// Serve static files from the 'uploads' folder
+app.use('/uploads', express.static('uploads'));
+
+// Serve the HTML file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start the server
