@@ -44,7 +44,7 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // API to handle form submission
 app.post('/submit-feedback', async (req, res) => {
     try {
-        const { name, email, rating, comments } = req.body;
+        const { name, email, rating, comments, image } = req.body; // Include image
 
         // Check if feedback has already been submitted with this email
         const existingFeedback = await Feedback.findOne({ email });
@@ -53,7 +53,7 @@ app.post('/submit-feedback', async (req, res) => {
         }
 
         // Save new feedback in MongoDB
-        const feedback = new Feedback({ name, email, rating, comments });
+        const feedback = new Feedback({ name, email, rating, comments, image }); // Save image too
         await feedback.save();
 
         // Respond with success and user's name
