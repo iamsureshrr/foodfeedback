@@ -24,10 +24,13 @@ const feedbackSchema = new mongoose.Schema({
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
+app.use(express.static(path.join(__dirname, 'public')));
+
+
 // Serve the HTML file from root
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+//app.get('/', (req, res) => {
+//    res.sendFile(path.join(__dirname, 'index.html'));
+//});
 
 // Serve the QR code generator page
 app.get('/qr', (req, res) => {
@@ -65,7 +68,7 @@ app.get('/temp-link', (req, res) => {
     const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link
 
     tempLinks[tempId] = expiryTime; // Store the expiry time
-    res.json({ link: temporaryLink }); // Return the temporary link
+	res.redirect(temporaryLink);
 });
 
 // Handle access to the feedback form with expiration logic
