@@ -57,11 +57,32 @@ app.post('/submit-feedback', async (req, res) => {
 });
 
 // Temporary link endpoint
-app.get('/temp-link', (req, res) => {
-    // Generate a temporary link valid for 5 minutes
-    const temporaryLink = `https://foodfeedback.onrender.com?temp=${Date.now() + 5 * 60 * 1000}`; // Expires in 5 minutes
-    res.redirect(temporaryLink);
+let tempLinks = {}; // Store temporary links with their expiry timestamps
 
+app.get('/temp-link', (req, res) => {
+    const tempId = Date.now(); // Unique identifier
+    const expiryTime = Date.now() + 5 * 60 * 1000; // Expires in 5 minutes
+    const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link
+
+    tempLinks[tempId] = expiryTime; // Store the expiry time
+    res.json({ link: temporaryLink }); // Return the temporary link
+});
+
+// Handle access to the feedback form with expiration logic
+app.get('/', (req, res) => {
+    const { temp } = req.query;
+
+    if (temp && tempLinks[temp]) {
+        // Check if the link has expired
+        if (Date.now() > tempLinks[temp]) {
+            delete tempLinks[temp]; // Remove expired link
+            return res.status(403).send('This link has expired. Please scan the QR code again.'); // Link expired
+        }
+        // Link is valid, serve the feedback form
+        return res.sendFile(path.join(__dirname, 'index.html'));
+    }
+    // If no valid temp link, redirect to the QR code page
+    res.redirect('/qr');
 });
 
 // Start the server
