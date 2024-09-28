@@ -7,7 +7,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://iamsureshrr:iamsureshrr@cluster0.nm9jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
     useNewUrlParser: true,
@@ -25,15 +24,15 @@ const feedbackSchema = new mongoose.Schema({
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
-// Serve static files from the 'public' folder
-//app.use(express.static(path.join(__dirname, 'public' )));
-
-
-// Serve the HTML file from root (without 'public' folder)
+// Serve the HTML file from root
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));  // This assumes your 'feedback.html' is in the root directory
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve the QR code generator page
+app.get('/qr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'qr.html'));
+});
 
 // API to handle form submission
 app.post('/submit-feedback', async (req, res) => {
@@ -55,6 +54,13 @@ app.post('/submit-feedback', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error saving feedback' });
     }
+});
+
+// Temporary link endpoint
+app.get('/temp-link', (req, res) => {
+    // Generate a temporary link valid for 5 minutes
+    const temporaryLink = `https://foodfeedback.onrender.com?temp=${Date.now() + 5 * 60 * 1000}`; // Expires in 5 minutes
+    res.json({ link: temporaryLink });
 });
 
 // Start the server
