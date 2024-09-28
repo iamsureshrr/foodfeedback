@@ -243,8 +243,9 @@ color: floralwhite;
                     // Clear all fields after the modal is dismissed
                     document.getElementById('feedbackForm').reset();
                 }, 2000);
-				window.location.href = "https://foodfeedback.onrender.com/qr";
+
             } else if (result.error === 'already_submitted') {
+							window.location.href = "https://foodfeedback.onrender.com/qr";
                 alert('You have already submitted feedback.');
             }
         });
