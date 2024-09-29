@@ -29,16 +29,9 @@ const feedbackSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now } // Add date field
 });
 
-
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
 app.use(express.static(path.join(__dirname, 'public')));
-
-
-// Serve the HTML file from root
-//app.get('/', (req, res) => {
-//    res.sendFile(path.join(__dirname, 'index.html'));
-//});
 
 // Serve the QR code generator page
 app.get('/qr', (req, res) => {
@@ -47,15 +40,14 @@ app.get('/qr', (req, res) => {
 
 // Serve the dashboard page for admin
 app.get('/dashboard.html', (req, res) => {
-    res.sendFile(path.join(__dirname,'dashboard.html')); // Make sure this path is correct
+    res.sendFile(path.join(__dirname, 'dashboard.html')); // Make sure this path is correct
 });
 
 // Serve static files from the "images" directory
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-
 // API to handle form submission
-app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Using 'upload.single' to handle single image uploads
+app.post('/submit-feedback', upload.single('image'), async (req, res) => {
     try {
         const { name, email, rating, comments } = req.body;
 
@@ -63,7 +55,6 @@ app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Us
         const existingFeedback = await Feedback.findOne({ email });
         if (existingFeedback) {
             return res.json({ success: false, error: 'already_submitted' });
-			res.redirect('/qr');
         }
 
         // Prepare image for storage
@@ -73,7 +64,7 @@ app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Us
         }
 
         // Save new feedback in MongoDB
-        const feedback = new Feedback({ name, email, rating, comments, image }); // Save image too
+        const feedback = new Feedback({ name, email, rating, comments, image });
         await feedback.save();
 
         // Respond with success and user's name
@@ -84,7 +75,6 @@ app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Us
     }
 });
 
-
 // Temporary link endpoint
 let tempLinks = {}; // Store temporary links with their expiry timestamps
 
@@ -94,7 +84,7 @@ app.get('/temp-link', (req, res) => {
     const temporaryLink = `https://foodfeedback.onrender.com/?temp=${tempId}`; // Temporary link
 
     tempLinks[tempId] = expiryTime; // Store the expiry time
-	res.redirect(temporaryLink);
+    res.redirect(temporaryLink);
 });
 
 // Handle access to the feedback form with expiration logic
@@ -114,12 +104,6 @@ app.get('/', (req, res) => {
     res.redirect('/qr');
 });
 
-// Serve the admin dashboard
-//app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dashboard.html'));
-});
-
-// API to get all feedbacks for the admin dashboard
 // API to get all feedbacks for the admin dashboard
 app.get('/admin/feedbacks', async (req, res) => {
     try {
@@ -142,13 +126,12 @@ app.get('/admin/feedbacks', async (req, res) => {
         // Include date and time in the response
         res.json(feedbacks.map(feedback => ({
             ...feedback,
-            date: feedback._id.getTimestamp() // Get timestamp from ObjectId
+            date: feedback.date // Use the date field from the schema
         })));
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error fetching feedback data' });
     }
 });
-
 
 // Start the server
 const PORT = process.env.PORT || 5000;
