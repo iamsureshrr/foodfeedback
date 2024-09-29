@@ -33,12 +33,7 @@ const Feedback = mongoose.model('Feedback', feedbackSchema);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('*', (req, res, next) => {
-    if (req.originalUrl !== '/qr' && req.originalUrl !== '/dashboard.html') {
-        return res.redirect('/qr');
-    }
-    next();
-});
+
 
 
 // Serve the QR code generator page
