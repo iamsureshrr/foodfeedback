@@ -106,6 +106,7 @@
 
                 // Validate credentials
                 if (username === "admin" && password === "admin123") {
+				localStorage.setItem('isLoggedIn', 'true'); // Set login state
                     window.location.href = "dashboard.html"; // Navigate to the dashboard.html page
                 } else {
                     alert("Invalid credentials. Please try again.");

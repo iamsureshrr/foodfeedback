@@ -54,7 +54,11 @@
     </style>
 </head>
 <body>
-    <div class="container mt-5">
+<div class="admin-btn">
+    <button class="btn btn-dark" id="logoutBtn">Logout</button>
+</div>
+
+     <div class="container mt-5">
         <h2 class="text-center">Admin Dashboard</h2>
         <table class="table table-striped">
             <thead>
@@ -110,144 +114,186 @@
     </div>
 
     <script>
-        let currentSortColumn = '';
-        let currentSortOrder = 'asc'; // 'asc' for ascending, 'desc' for descending
-        let feedbackData = []; // Store fetched data
-        let currentPage = 1;
-        const rowsPerPage = 10;
+	
+	
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
 
-        // Fetch feedback data from the server
-        async function fetchFeedbackData() {
-            showLoadingModal(); // Show loading popup
+    if (!isLoggedIn) {
+        alert('You must be logged in to access this page.');
+        window.location.href = 'https://foodfeedback.onrender.com/qr'; // Redirect to your login page
+    }
 
-            try {
-                const response = await fetch('/admin/feedbacks');
-                feedbackData = await response.json(); // Store the fetched data in the global variable
-                updatePagination(); // Update pagination buttons and display the first page
-                populateTable(paginateData(feedbackData)); // Populate the table
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                hideLoadingModal(); // Hide loading popup
+    // Logout functionality
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        localStorage.removeItem('isLoggedIn'); // Clear the login status
+        alert('You have been logged out.');
+        window.location.href = 'https://foodfeedback.onrender.com/qr'; // Redirect to the QR page
+    });
+
+ 
+
+	
+    let currentSortColumn = '';
+    let currentSortOrder = 'desc'; // Default to 'desc' for descending order
+    let feedbackData = []; // Store fetched data
+    let currentPage = 1;
+    const rowsPerPage = 10;
+
+    // Fetch feedback data from the server
+    async function fetchFeedbackData() {
+        showLoadingModal(); // Show loading popup
+
+        try {
+            const response = await fetch('/admin/feedbacks');
+            feedbackData = await response.json(); // Store the fetched data in the global variable
+            
+            // Sort feedback data in descending order by default
+            feedbackData.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            updatePagination(); // Update pagination buttons and display the first page
+            populateTable(paginateData(feedbackData)); // Populate the table
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            hideLoadingModal(); // Hide loading popup
+        }
+    }
+
+    // Show the loading modal
+    function showLoadingModal() {
+        const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        loadingModal.show();
+    }
+
+    // Hide the loading modal
+    function hideLoadingModal() {
+        const loadingModal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
+        if (loadingModal) {
+            loadingModal.hide();
+        }
+    }
+
+    // Populate the table with feedback data
+    function populateTable(data) {
+        const feedbackTable = document.getElementById('feedbackData');
+        feedbackTable.innerHTML = '';
+        data.forEach(feedback => {
+            const formattedDate = new Date(feedback.date);
+            const day = formattedDate.getDate();
+            const month = formattedDate.getMonth() + 1; // Months are zero-based
+            const year = formattedDate.getFullYear().toString().slice(-2); // Get last two digits of the year
+            const hours = formattedDate.getHours();
+            const minutes = String(formattedDate.getMinutes()).padStart(2, '0'); // Add leading zero to minutes
+            const ampm = hours >= 12 ? 'pm' : 'am'; // Determine AM/PM
+            const formattedHours = hours % 12 || 12; // Convert to 12-hour format
+
+            const dateStr = `${day}/${month}/${year}, ${formattedHours}:${minutes}${ampm}`;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${feedback.name}</td>
+                <td>${feedback.email}</td>
+                <td>${feedback.rating}</td>
+                <td>${feedback.comments}</td>
+                <td>${dateStr}</td> <!-- Formatted date -->
+                <td><button class="btn btn-link" onclick="showImage('${feedback.image}')">View</button></td>
+            `;
+            feedbackTable.appendChild(row);
+        });
+    }
+
+    // Show the image in a modal
+    function showImage(imageBase64) {
+        const modalImage = document.getElementById('modalImage');
+        modalImage.src = `data:image/jpeg;base64,${imageBase64}`;
+        const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+        imageModal.show();
+    }
+
+    // Sort the table based on the column
+    function sortTable(column) {
+        // Clear existing sort icons
+        const columns = ['name', 'email', 'rating', 'comments', 'date'];
+        columns.forEach(col => {
+            const iconElement = document.getElementById(`${col}SortIcon`);
+            if (iconElement) {
+                iconElement.textContent = ''; // Clear icon
             }
+        });
+
+        // Set the current sort order
+        if (currentSortColumn === column) {
+            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
+        } else {
+            currentSortOrder = 'asc'; // Default to ascending order for new column
         }
+        currentSortColumn = column;
+        
+        // Set the sort icon for the current column
+        const iconElement = document.getElementById(`${column}SortIcon`);
+        iconElement.textContent = currentSortOrder === 'asc' ? '▲' : '▼'; // Update sort icon
 
-        // Show the loading modal
-        function showLoadingModal() {
-            const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-            loadingModal.show();
-        }
-
-        // Hide the loading modal
-        function hideLoadingModal() {
-            const loadingModal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
-            if (loadingModal) {
-                loadingModal.hide();
-            }
-        }
-
-        // Populate the table with feedback data
-        function populateTable(data) {
-            const feedbackTable = document.getElementById('feedbackData');
-            feedbackTable.innerHTML = '';
-            data.forEach(feedback => {
-                const formattedDate = new Date(feedback.date);
-                const day = formattedDate.getDate();
-                const month = formattedDate.getMonth() + 1; // Months are zero-based
-                const year = formattedDate.getFullYear().toString().slice(-2); // Get last two digits of the year
-                const hours = formattedDate.getHours();
-                const minutes = String(formattedDate.getMinutes()).padStart(2, '0'); // Add leading zero to minutes
-                const ampm = hours >= 12 ? 'pm' : 'am'; // Determine AM/PM
-                const formattedHours = hours % 12 || 12; // Convert to 12-hour format
-
-                const dateStr = `${day}/${month}/${year}, ${formattedHours}:${minutes}${ampm}`;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${feedback.name}</td>
-                    <td>${feedback.email}</td>
-                    <td>${feedback.rating}</td>
-                    <td>${feedback.comments}</td>
-                    <td>${dateStr}</td> <!-- Formatted date -->
-                    <td><button class="btn btn-link" onclick="showImage('${feedback.image}')">View</button></td>
-                `;
-                feedbackTable.appendChild(row);
-            });
-        }
-
-        // Show the image in a modal
-        function showImage(imageBase64) {
-            const modalImage = document.getElementById('modalImage');
-            modalImage.src = `data:image/jpeg;base64,${imageBase64}`;
-            const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-            imageModal.show();
-        }
-
-        // Sort the table based on the column
-        function sortTable(column) {
-            if (currentSortColumn === column) {
-                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
+        // Sort feedback data
+        feedbackData.sort((a, b) => {
+            let comparison = 0;
+            if (column === 'date') {
+                // Compare dates
+                comparison = new Date(a.date) - new Date(b.date);
+            } else if (typeof a[column] === 'string') {
+                // Compare strings
+                comparison = a[column].localeCompare(b[column]);
             } else {
-                currentSortOrder = 'asc'; // Default to ascending order for new column
+                // Compare numbers (e.g., ratings)
+                comparison = a[column] - b[column];
             }
-            currentSortColumn = column;
+            return currentSortOrder === 'asc' ? comparison : -comparison;
+        });
 
-            // Sort feedback data
-            feedbackData.sort((a, b) => {
-                let comparison = 0;
-                if (column === 'date') {
-                    // Compare dates
-                    comparison = new Date(a.date) - new Date(b.date);
-                } else if (typeof a[column] === 'string') {
-                    // Compare strings
-                    comparison = a[column].localeCompare(b[column]);
-                } else {
-                    // Compare numbers (e.g., ratings)
-                    comparison = a[column] - b[column];
-                }
-                return currentSortOrder === 'asc' ? comparison : -comparison;
-            });
+        // Repopulate the table with sorted data
+        populateTable(paginateData(feedbackData));
+    }
 
-            // Repopulate the table with sorted data
+    // Paginate the feedback data
+    function paginateData(data) {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return data.slice(start, end);
+    }
+
+    // Navigate to the next page
+    function nextPage() {
+        if (currentPage * rowsPerPage < feedbackData.length) {
+            currentPage++;
+            updatePagination();
             populateTable(paginateData(feedbackData));
         }
+    }
 
-        // Paginate the feedback data
-        function paginateData(data) {
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            return data.slice(start, end);
+    // Navigate to the previous page
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePagination();
+            populateTable(paginateData(feedbackData));
         }
+    }
 
-        // Navigate to the next page
-        function nextPage() {
-            if (currentPage * rowsPerPage < feedbackData.length) {
-                currentPage++;
-                updatePagination();
-                populateTable(paginateData(feedbackData));
-            }
-        }
+    // Update pagination button states
+    function updatePagination() {
+        document.getElementById('pageNumber').textContent = `Page ${currentPage}`;
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage * rowsPerPage >= feedbackData.length;
+    }
 
-        // Navigate to the previous page
-        function prevPage() {
-            if (currentPage > 1) {
-                currentPage--;
-                updatePagination();
-                populateTable(paginateData(feedbackData));
-            }
-        }
+    // Fetch the feedback data when the page loads
+    window.onload = fetchFeedbackData;
+	
+	
+</script>
 
-        // Update pagination controls
-        function updatePagination() {
-            document.getElementById('pageNumber').innerText = `Page ${currentPage}`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage * rowsPerPage >= feedbackData.length;
-        }
 
-        // Initialize the dashboard on page load
-        window.onload = fetchFeedbackData;
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
 </body>
 </html>
