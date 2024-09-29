@@ -115,16 +115,17 @@ app.get('/', (req, res) => {
 });
 
 // Serve the admin dashboard
-app.get('/test', (req, res) => {
+//app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
 // API to get all feedbacks for the admin dashboard
-app.get('/api/feedback', async (req, res) => {
+// API to get all feedbacks for the admin dashboard
+app.get('/admin/feedbacks', async (req, res) => {
     try {
         const feedbacks = await Feedback.find().lean();
-        
-        // Convert numeric ratings to text
+
+        // Map numeric ratings to text
         const ratingTextMap = {
             '1': 'Poor',
             '2': 'Fair',
@@ -133,19 +134,20 @@ app.get('/api/feedback', async (req, res) => {
             '5': 'Excellent'
         };
 
-        // Map ratings to text equivalents and include date
+        // Map ratings and convert to text
         feedbacks.forEach(feedback => {
             feedback.rating = ratingTextMap[feedback.rating] || feedback.rating; // Convert or keep as-is
         });
 
-        res.json(feedbacks);
+        // Include date and time in the response
+        res.json(feedbacks.map(feedback => ({
+            ...feedback,
+            date: feedback._id.getTimestamp() // Get timestamp from ObjectId
+        })));
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error fetching feedback data' });
     }
 });
-
-
-
 
 
 // Start the server
