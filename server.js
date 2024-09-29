@@ -56,6 +56,7 @@ app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Us
         const existingFeedback = await Feedback.findOne({ email });
         if (existingFeedback) {
             return res.json({ success: false, error: 'already_submitted' });
+			res.redirect('/qr');
         }
 
         // Prepare image for storage

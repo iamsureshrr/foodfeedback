@@ -136,14 +136,14 @@ color: floralwhite;
             <button type="submit" class="btn btn-primary">Submit Feedback</button>
         </form>
 
-
+        <!-- Loading Message -->
+        <div id="loadingMessage" class="text-info">Please wait, loading...</div>
 
         <!-- Modal for Thank You Popup -->
         <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-        <!-- Loading Message -->
-        <div id="loadingMessage" class="text-info">Please wait, loading...</div>				
+				
                     <div class="modal-header">
                         <h5 class="modal-title" id="thankYouModalLabel">Thank You!</h5>
                     </div>
@@ -192,7 +192,7 @@ color: floralwhite;
                 // Show thank you modal
                 const modalBody = document.getElementById('modalBody');
                 modalBody.textContent = `Thank you, ${result.name}!`;
-
+							window.location.href = "https://foodfeedback.onrender.com/qr";
                 const thankYouModal = new bootstrap.Modal(document.getElementById('thankYouModal'));
                 thankYouModal.show();
 
@@ -204,7 +204,7 @@ color: floralwhite;
                 }, 2000);
 
             } else if (result.error === 'already_submitted') {
-						//	window.location.href = "https://foodfeedback.onrender.com/qr";
+							window.location.href = "https://foodfeedback.onrender.com/qr";
                 alert('You have already submitted feedback.');
             }
         });
