@@ -115,11 +115,10 @@ app.get('/', (req, res) => {
 });
 
 // Serve the admin dashboard
-//app.get('/admin', (req, res) => {
-//    res.sendFile(path.join(__dirname, 'dashboard.html'));
-//});
+app.get('/test', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
 
-// API to get all feedbacks for the admin dashboard
 // API to get all feedbacks for the admin dashboard
 app.get('/api/feedback', async (req, res) => {
     try {
