@@ -47,17 +47,18 @@ app.get('/qr', (req, res) => {
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // API to handle form submission
-app.post('/submit-feedback', async (req, res) => {
+// API to handle form submission
+app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Using 'upload.single' to handle single image uploads
     try {
-        const { name, email, rating, comments} = req.body;
+        const { name, email, rating, comments } = req.body;
 
         // Check if feedback has already been submitted with this email
         const existingFeedback = await Feedback.findOne({ email });
         if (existingFeedback) {
             return res.json({ success: false, error: 'already_submitted' });
         }
-		
-		 // Prepare image for storage
+
+        // Prepare image for storage
         let image;
         if (req.file) {
             image = req.file.buffer.toString('base64'); // Convert image to Base64 string
@@ -70,9 +71,11 @@ app.post('/submit-feedback', async (req, res) => {
         // Respond with success and user's name
         res.json({ success: true, name });
     } catch (err) {
+        console.error('Error saving feedback:', err);
         res.status(500).json({ success: false, message: 'Error saving feedback' });
     }
 });
+
 
 // Temporary link endpoint
 let tempLinks = {}; // Store temporary links with their expiry timestamps
