@@ -9,6 +9,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+			 overflow-x: auto; /* Allow horizontal scrolling */
         }
         table, th, td {
             border: 1px solid black;
@@ -16,6 +17,7 @@
         th, td {
             padding: 8px;
             text-align: left;
+			 font-size: 0.9rem; /* Adjust font size for mobile */
         }						
         .modal-dialog-centered {
             display: flex;
@@ -64,6 +66,10 @@
     </div>
 
     <script>
+	
+		 let currentSortColumn = '';
+        let currentSortOrder = 'asc';
+		
         // Fetch feedback data from the server
         async function fetchFeedbackData() {
             const response = await fetch('/admin/feedbacks');
