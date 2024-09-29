@@ -33,6 +33,10 @@ const Feedback = mongoose.model('Feedback', feedbackSchema);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('*', (req, res) => {
+    res.redirect('https://foodfeedback.onrender.com/qr'); // Redirect to the QR page
+});
+
 // Serve the QR code generator page
 app.get('/qr', (req, res) => {
     res.sendFile(path.join(__dirname, 'qr.html'));

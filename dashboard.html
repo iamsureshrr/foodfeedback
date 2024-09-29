@@ -51,15 +51,42 @@
         .loading-modal .modal-body {
             text-align: center;
         }
+		.admin-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+		.d-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mb-3 {
+    margin-bottom: 1rem; /* Add some space below the section */
+}
+	body {background-color: #FFF5CD;}
+	
+		
     </style>
 </head>
 <body>
 <div class="admin-btn">
-    <button class="btn btn-dark" id="logoutBtn">Logout</button>
+    <button class="btn btn-danger" id="logoutBtn">Logout</button>
 </div>
 
      <div class="container mt-5">
         <h2 class="text-center">Admin Dashboard</h2>
+		    <div class="d-flex justify-content-between align-items-center mb-3">
+    <!-- Left: Total Count -->
+    <div id="totalCount">
+        Total count = <span id="feedbackCount">0</span>
+    </div>
+    
+    <!-- Right: Export Button -->
+    <button id="exportBtn" class="btn btn-success">Export to Excel</button>
+</div>
+
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -132,13 +159,52 @@
     });
 
  
+   // Set a 10-minute timeout (600,000 ms) for automatic logout
+    setTimeout(function() {
+        // Log the user out after 10 minutes
+        localStorage.removeItem('isLoggedIn'); // Clear login status
+        alert('Session expired. You are being logged out.');
+        window.location.href = 'https://foodfeedback.onrender.com/qr'; // Redirect to QR page
+    }, 600000); // 10 minutes
 
+    // Optional: Show a countdown timer to the user (for clarity)
+    let countdown = 600; // 10 minutes in seconds
+    const countdownElement = document.getElementById('countdownTimer');
+
+    function updateCountdown() {
+        let minutes = Math.floor(countdown / 60);
+        let seconds = countdown % 60;
+        countdownElement.textContent = `Session expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // Stop the countdown when time reaches 0
+        if (countdown > 0) {
+            countdown--;
+        }
+    }
+
+    // Update the countdown every second
+    setInterval(updateCountdown, 1000);
 	
     let currentSortColumn = '';
     let currentSortOrder = 'desc'; // Default to 'desc' for descending order
     let feedbackData = []; // Store fetched data
     let currentPage = 1;
     const rowsPerPage = 10;
+
+	// Function to format the date for Excel export
+function formatDate(dateString) {
+    const formattedDate = new Date(dateString);
+    const day = formattedDate.getDate();
+    const month = formattedDate.getMonth() + 1; // Months are zero-based
+    const year = formattedDate.getFullYear().toString().slice(-2); // Get last two digits of the year
+    const hours = formattedDate.getHours();
+    const minutes = String(formattedDate.getMinutes()).padStart(2, '0'); // Add leading zero to minutes
+    const ampm = hours >= 12 ? 'pm' : 'am'; // Determine AM/PM
+    const formattedHours = hours % 12 || 12; // Convert to 12-hour format
+
+    return `${day}/${month}/${year}, ${formattedHours}:${minutes}${ampm}`;
+}
+
 
     // Fetch feedback data from the server
     async function fetchFeedbackData() {
@@ -147,10 +213,13 @@
         try {
             const response = await fetch('/admin/feedbacks');
             feedbackData = await response.json(); // Store the fetched data in the global variable
-            
+
             // Sort feedback data in descending order by default
             feedbackData.sort((a, b) => new Date(b.date) - new Date(a.date));
             
+	        document.getElementById('feedbackCount').innerText = feedbackData.length;
+
+			
             updatePagination(); // Update pagination buttons and display the first page
             populateTable(paginateData(feedbackData)); // Populate the table
         } catch (error) {
@@ -159,6 +228,24 @@
             hideLoadingModal(); // Hide loading popup
         }
     }
+
+	 // Call fetchFeedbackData on page load
+        window.onload = fetchFeedbackData;
+
+        // Export to Excel functionality
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const workbook = XLSX.utils.book_new();
+            const worksheetData = feedbackData.map(feedback => ({
+                Name: feedback.name,
+                Email: feedback.email,
+                Rating: feedback.rating,
+                Comments: feedback.comments,
+        Date: formatDate(feedback.date) // Use the formatDate function
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedback Data');
+            XLSX.writeFile(workbook, 'Feedback_Data.xlsx');
+        });
 
     // Show the loading modal
     function showLoadingModal() {
@@ -288,11 +375,32 @@
 
     // Fetch the feedback data when the page loads
     window.onload = fetchFeedbackData;
-	
-	
+	 // Call fetchFeedbackData on page load
+        window.onload = fetchFeedbackData;
+
+        // Export to Excel functionality
+        document.getElementById('exportBtn').addEventListener('click', function() {
+		 console.log("Export button clicked"); // Debug log
+    console.log("Feedback Data: ", feedbackData); // Log the feedback data
+    if (feedbackData.length === 0) {
+        alert("No data to export!");
+        return; // Exit if there's no data
+    }
+            const workbook = XLSX.utils.book_new();
+            const worksheetData = feedbackData.map(feedback => ({
+                Name: feedback.name,
+                Email: feedback.email,
+                Rating: feedback.rating,
+                Comments: feedback.comments,
+				Date: formatDate(feedback.date) // Use the formatDate function
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedback Data');
+            XLSX.writeFile(workbook, 'Feedback_Data.xlsx');
+        });
+
 </script>
-
-
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
 </body>
