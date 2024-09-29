@@ -25,8 +25,10 @@ const feedbackSchema = new mongoose.Schema({
     email: String,
     rating: String,
     comments: String,
-	image: String, // Store image as a Base64 string
+    image: String, // Store image as a Base64 string
+    date: { type: Date, default: Date.now } // Add date field
 });
+
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
@@ -43,10 +45,15 @@ app.get('/qr', (req, res) => {
     res.sendFile(path.join(__dirname, 'qr.html'));
 });
 
+// Serve the dashboard page for admin
+app.get('/dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname,'dashboard.html')); // Make sure this path is correct
+});
+
 // Serve static files from the "images" directory
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// API to handle form submission
+
 // API to handle form submission
 app.post('/submit-feedback', upload.single('image'), async (req, res) => { // Using 'upload.single' to handle single image uploads
     try {
@@ -106,6 +113,41 @@ app.get('/', (req, res) => {
     // If no valid temp link, redirect to the QR code page
     res.redirect('/qr');
 });
+
+// Serve the admin dashboard
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+
+// API to get all feedbacks for the admin dashboard
+// API to get all feedbacks for the admin dashboard
+app.get('/api/feedback', async (req, res) => {
+    try {
+        const feedbacks = await Feedback.find().lean();
+        
+        // Convert numeric ratings to text
+        const ratingTextMap = {
+            '1': 'Poor',
+            '2': 'Fair',
+            '3': 'Good',
+            '4': 'Very Good',
+            '5': 'Excellent'
+        };
+
+        // Map ratings to text equivalents and include date
+        feedbacks.forEach(feedback => {
+            feedback.rating = ratingTextMap[feedback.rating] || feedback.rating; // Convert or keep as-is
+        });
+
+        res.json(feedbacks);
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Error fetching feedback data' });
+    }
+});
+
+
+
+
 
 // Start the server
 const PORT = process.env.PORT || 5000;
